@@ -1,24 +1,19 @@
 #!/bin/bash
-# Note that $var_UI_TYPE may not be set here. especially if being loaded in the "early bootstrap" phase
-
 # TODO: implement 'retry until user does it correctly' everywhere
 # TODO: at some places we should check if $1 etc is only 1 word because we often depend on that
 # TODO: standardize. eg everything $1= question/title, $2=default. also default should probably be 'no' for no default everywhere
 # TODO: figure out something to make dia windows always big enough, yet fit nicely in the terminal
 
 
-# Taken from setup.
-DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
-DIA_SUCCESSIVE_ITEMS=$RUNTIME_DIR/aif-dia-successive-items
-
-
-# get keymap/font (maybe configured by aif allready in another process or even in another shell)
-# otherwise, take default keymap and consolefont as configured in /etc/rc.conf. can be overridden
-# Note that the vars in /etc/rc.conf can also be empty!
-[ -e $RUNTIME_DIR/aif-keymap      ] && var_KEYMAP=`     cat $RUNTIME_DIR/aif-keymap`
-[ -e $RUNTIME_DIR/aif-consolefont ] && var_CONSOLEFONT=`cat $RUNTIME_DIR/aif-consolefont`
-[ -z "$var_KEYMAP"      ] && source /etc/rc.conf && var_KEYMAP=$KEYMAP
-[ -z "$var_CONSOLEFONT" ] && source /etc/rc.conf && var_CONSOLEFONT=$CONSOLEFONT
+# you should call this function when you want to use this library (can be called multiple times, to change ui type)
+# $1 directory for tmp files
+# $2 ui type (dia or cli). defaults to cli
+lib-ui-sh-init ()
+{
+	DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
+	DIA_SUCCESSIVE_ITEMS=$1/libui-sh-dia-successive-items
+	var_UI_TYPE=${2:-cli}
+}
 
 
 
@@ -109,31 +104,6 @@ debug ()
 	fi
 }
 
-
-
-# taken from setup
-printk()
-{
-	case $1 in
-		"on")  echo 4 >/proc/sys/kernel/printk ;;
-		"off") echo 0 >/proc/sys/kernel/printk ;;
-	esac
-}
-
-
-# TODO: pass disks as argument to decouple backend logic
-# Get a list of available disks for use in the "Available disks" dialogs.
-# Something like:
-#   /dev/sda: 640133 MiB (640 GiB)
-#   /dev/sdb: 640135 MiB (640 GiB)
-_getavaildisks()
-{
-	for i in $(finddisks)
-	do
-		get_blockdevice_size $i MiB
-		echo "$i: $BLOCKDEVICE_SIZE MiB ($(($BLOCKDEVICE_SIZE/2**10)) GiB)\n"
-	done
-}
 
 
 # ask for a timezone.
@@ -651,41 +621,4 @@ _cli_follow_progress ()
 	echo "Title: $1"
 	[ -n "$3" ] && tail -f $2 --pid=$3
 	[ -z "$3" ] && tail -f $2
-}
-
-set_keymap ()
-{
-	KBDDIR="/usr/share/kbd"
-
-	KEYMAPS=
-	for i in $(find $KBDDIR/keymaps -name "*.gz" | sort); do
-		KEYMAPS="$KEYMAPS ${i##$KBDDIR/keymaps/} -"
-	done
-	ask_option "${var_KEYMAP:-no}" "Select A Keymap" '' optional $KEYMAPS
-	if [ -n "$ANSWER_OPTION" ]
-	then
-		loadkeys -q $KBDDIR/keymaps/$ANSWER_OPTION
-		var_KEYMAP=$ANSWER_OPTION
-		echo "$var_KEYMAP" > $RUNTIME_DIR/aif-keymap
-	fi
-
-	FONTS=
-	# skip .cp.gz and partialfonts files for now see bug #6112, #6111
-	for i in $(find $KBDDIR/consolefonts -maxdepth 1 ! -name '*.cp.gz' -name "*.gz"  | sed 's|^.*/||g' | sort); do
-		FONTS="$FONTS $i -"
-	done
-	ask_option "${var_CONSOLEFONT:-no}" "Select A Console Font" '' optional $FONTS
-	if [ -n "$ANSWER_OPTION" ]
-	then
-		var_CONSOLEFONT=$ANSWER_OPTION
-		for i in 1 2 3 4
-		do
-			if [ -d /dev/vc ]; then
-				setfont $KBDDIR/consolefonts/$var_CONSOLEFONT -C /dev/vc/$i
-			else
-				setfont $KBDDIR/consolefonts/$var_CONSOLEFONT -C /dev/tty$i
-			fi
-		done
-		echo "$var_CONSOLEFONT" > $RUNTIME_DIR/aif-consolefont
-	fi
 }
