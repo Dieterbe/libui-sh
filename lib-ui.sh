@@ -300,8 +300,9 @@ _dia_ask_checklist ()
 _dia_ask_datetime ()
 {
 	# display and ask to set date/time
-	local _date=$(dialog --calendar "Set the date.\nUse <TAB> to navigate and arrow keys to change values." 0 0 0 0 0 || return 1) # form like: 07/12/2008
-	local _time=$(dialog --timebox "Set the time.\nUse <TAB> to navigate and up/down to change values." 0 0 || return 1) # form like: 15:26:46
+	local _date _time
+	_date=$(_dia_dialog --calendar "Set the date.\nUse <TAB> to navigate and arrow keys to change values." 0 0 0 0 0) || return 1 # form like: 07/12/2008
+	_time=$(_dia_dialog --timebox "Set the time.\nUse <TAB> to navigate and up/down to change values." 0 0) || return 1 # form like: 15:26:46
 	debug 'UI' "Date as specified by user $_date time: $_time"
 
 	# DD/MM/YYYY hh:mm:ss -> MMDDhhmmYYYY.ss (date default format, set like date $ANSWER_DATETIME)  Not enabled because there is no use for it i think.
