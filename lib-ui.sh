@@ -419,7 +419,9 @@ _dia_follow_progress ()
 	title=$1
 	logfile=$2
 
-	FOLLOW_PID=$(_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0)
+	_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 >$RUNTIME_DIR/aif-follow-pid
+	FOLLOW_PID=`cat $RUNTIME_DIR/aif-follow-pid`
+	rm $RUNTIME_DIR/aif-follow-pid
 
 	# I wish something like this would work.  anyone who can explain me why it doesn't get's to be aif contributor of the month.
 	# FOLLOW_PID=`_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 2>&1 >/dev/null | head -n 1`
@@ -427,6 +429,10 @@ _dia_follow_progress ()
 	# Also this doesn't work:
 	# _dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 &>/dev/null &
 	# FOLLOW_PID=$!
+
+	# Also the new stdout-stderr-swapping isn't a clean solution for that. When command substitition is used bash will
+	# wait until the command terminates, dialog's forking to background will fail.
+	# FOLLOW_PID=$(_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0)
 }
 
 
