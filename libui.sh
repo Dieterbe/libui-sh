@@ -9,7 +9,7 @@
 # $1 ui type (dia or cli). defaults to cli
 # $2 directory for tmp files. default /tmp (leave empty for default)
 # $3 logfile (leave empty to disable logging)
-# $4 debug setting (1/0)
+# $4 debug categories (leave empty to disable debugging) (an array of categories you will use in debug calls. useful when grepping logfiles)
 libui-sh-init ()
 {
 	LIBUI_UI=${1:-cli}
@@ -23,7 +23,11 @@ libui-sh-init ()
 		LIBUI_LOG_FILE=$3
 		LIBUI_LOG_DIR=$(basename $LIBUI_LOG_FILE)
 	fi
-	LIBUI_DEBUG=${4:-0}
+	LIBUI_DEBUG=0
+	if [ -n "$4" ]; then
+		LIBUI_DEBUG=1
+		LIBUI_DEBUG_CATEGORIES=$4
+	fi
 	LIBUI_DIA_SUCCESSIVE_ITEMS=$LIBUI_TMP_DIR/libui-sh-dia-successive-items
 	LIBUI_FOLLOW_PID=$LIBUI_TMP_DIR/libui-sh-follow-pid
 	LIBUI_DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
@@ -99,16 +103,14 @@ log ()
 }
 
 
-# $1 = one or more categories (separated by spaces) from: MAIN, PROCEDURE, UI, UI-INTERACTIVE, FS, MISC, NETWORK, PACMAN, SOFTWARE
-#      You should always at least specify where you are (main, procedure or the name of the lib) and optionally further specification: eg in a ui function that works with pacman.
-#      This is very useful in ui-interactive where we always work with something else.
+# $1 = one or more debug categories (must be in a list of specified categories. see init function) (separated by spaces)
+#      Useful when grepping in the logfile
 # $2 = string to log
 debug ()
 {
-	valid_cats=(MAIN PROCEDURE UI UI-INTERACTIVE FS MISC NETWORK PACMAN SOFTWARE)
 	for cat in $1
 	do
-		check_is_in $cat "${valid_cats[@]}" || die_error "debug \$1 contains a value ($cat) which is not a valid debug category"
+		check_is_in $cat "${LIBUI_DEBUG_CATEGORIES[@]}" || die_error "debug \$1 contains a value ($cat) which is not a valid debug category"
 	done
 	[ -n "$2" ] || die_error "debug \$2 cannot be empty"
 
