@@ -1,4 +1,6 @@
 a shell library providing useful UI functions for shell scripts
 originally part of AIF (http://github.com/Dieterbe/aif)
 
-supports dialog and plaintext
+dependencies:
+- bash (for cli interface)
+- optionally: dialog (for ncurses interface)
