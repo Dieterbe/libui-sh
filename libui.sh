@@ -10,7 +10,7 @@
 # $2 directory for tmp files. default /tmp (leave empty for default)
 # $3 logfile (leave empty to disable logging)
 # $4 debug setting (1/0)
-lib-ui-sh-init ()
+libui-sh-init ()
 {
 	LIBUI_UI=${1:-cli}
 	LIBUI_TMP_DIR=/tmp
