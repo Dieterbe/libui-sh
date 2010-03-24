@@ -440,7 +440,7 @@ _dia_follow_progress ()
 	FOLLOW_PID=`cat $LIBUI_FOLLOW_PID`
 	rm $LIBUI_FOLLOW_PID
 
-	# I wish something like this would work.  anyone who can explain me why it doesn't get's to be aif contributor of the month.
+	# I wish something like this would work.  anyone who can explain me why it doesn't get's to be contributor of the month.
 	# FOLLOW_PID=`_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 2>&1 >/dev/null | head -n 1`
 
 	# Also this doesn't work:
