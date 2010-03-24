@@ -2,6 +2,6 @@ all: install
 
 install:
 	install -d $(DESTDIR)/usr/lib/
-	install -D -m755 lib-ui.sh $(DESTDIR)/usr/lib/lib-ui.sh
+	install -D -m755 lib-ui.sh $(DESTDIR)/usr/lib/libui.sh
 uninstall:
-	rm -rf  $(DESTDIR)/usr/lib/lib-ui.sh
+	rm -rf  $(DESTDIR)/usr/lib/libui.sh
