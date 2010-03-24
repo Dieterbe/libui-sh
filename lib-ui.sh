@@ -5,20 +5,37 @@
 # TODO: figure out something to make dia windows always big enough, yet fit nicely in the terminal
 
 
-# you should call this function when you want to use this library (can be called multiple times, to change ui type)
-# $1 directory for tmp files
-# $2 ui type (dia or cli). defaults to cli
+# you should call this function when you want to use this library (can be called multiple times, to change ui type or other settings)
+# $1 ui type (dia or cli). defaults to cli
+# $2 directory for tmp files. default /tmp (leave empty for default)
+# $3 logfile (leave empty to disable logging)
+# $4 debug setting (1/0)
 lib-ui-sh-init ()
 {
-	DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
-	DIA_SUCCESSIVE_ITEMS=$1/libui-sh-dia-successive-items
-	var_UI_TYPE=${2:-cli}
+	LIBUI_UI=${1:-cli}
+	LIBUI_TMP_DIR=/tmp
+	if [ -n "$2"]; then
+		LIBUI_TMP_DIR=$2
+	fi
+	LIBUI_LOG=0
+	if [ -n "$3"]; then
+		LIBUI_LOG=1
+		LIBUI_LOG_FILE=$3
+		LIBUI_LOG_DIR=$(basename $LIBUI_LOG_FILE)
+	fi
+	LIBUI_DEBUG=${4:-0}
+	LIBUI_DIA_SUCCESSIVE_ITEMS=$LIBUI_TMP_DIR/libui-sh-dia-successive-items
+	LIBUI_FOLLOW_PID=$LIBUI_TMP_DIR/libui-sh-follow-pid
+	LIBUI_DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
 }
 
 
 
 ### Functions that your code can use. Cli/dialog mode is fully transparant.  This library takes care of it ###
-
+# you could write your own functions implementing other things (kdedialogs, zenity dialogs, ..),
+# - just implement the functions below
+# - source your library
+# - libui-sh-init with the correct UI type
 
 
 # display error message and die
@@ -42,8 +59,8 @@ show_warning ()
 	type=msg
 	[ -n "$3" ] && type=$3
 	debug 'UI' "show_warning '$1': $2 ($type)"
-	[ `type -t _${var_UI_TYPE}_show_warning` == function ] || die_error "_${var_UI_TYPE}_show_warning is not a function"
-	_${var_UI_TYPE}_show_warning "$1" "$2" $type
+	[ `type -t _${LIBUI_UI}_show_warning` == function ] || die_error "_${LIBUI_UI}_show_warning is not a function"
+	_${LIBUI_UI}_show_warning "$1" "$2" $type
 }
 
 
@@ -51,8 +68,8 @@ show_warning ()
 notify ()
 {
 	debug 'UI' "notify: $@"
-	[ `type -t _${var_UI_TYPE}_notify` == function ] || die_error "_${var_UI_TYPE}_notify is not a function"
-	_${var_UI_TYPE}_notify "$@"
+	[ `type -t _${LIBUI_UI}_notify` == function ] || die_error "_${LIBUI_UI}_notify is not a function"
+	_${LIBUI_UI}_notify "$@"
 }
 
 
@@ -67,18 +84,18 @@ infofy () #TODO: when using successive things, the screen can become full and yo
 	successive=${2:-0}
 	succ_last=${3:-0}
 	debug 'UI' "infofy: $1"
-	[ `type -t _${var_UI_TYPE}_infofy` == function ] || die_error "_${var_UI_TYPE}_infofy is not a function"
-	_${var_UI_TYPE}_infofy "$1" $successive $succ_last
+	[ `type -t _${LIBUI_UI}_infofy` == function ] || die_error "_${LIBUI_UI}_infofy is not a function"
+	_${LIBUI_UI}_infofy "$1" $successive $succ_last
 }
 
 # logging of stuff
 log ()
 {
-	mkdir -p $LOG_DIR || die_error "Cannot create log directory"
+	mkdir -p $LIBUI_LOG_DIR || die_error "Cannot create log directory"
 	str="[LOG] `date +"%Y-%m-%d %H:%M:%S"` $@"
 	echo -e "$str" > $LOG || die_error "Cannot log $str to $LOG"
 
-	[ "$LOG_TO_FILE" = 1 ] && ( echo -e "$str" >> $LOGFILE || die_error "Cannot log $str to $LOGFILE" )
+	[ "$LIBUI_LOG" = 1 ] && ( echo -e "$str" >> $LIBUI_LOG_FILE || die_error "Cannot log $str to $LIBUI_LOG_FILE" )
 }
 
 
@@ -95,12 +112,12 @@ debug ()
 	done
 	[ -n "$2" ] || die_error "debug \$2 cannot be empty"
 
-	mkdir -p $LOG_DIR || die_error "Cannot create log directory"
-	if [ "$DEBUG" = "1" ]
+	mkdir -p $LIBUI_LOG_DIR || die_error "Cannot create log directory"
+	if [ "$LIBUI_DEBUG" = "1" ]
 	then
 		str="[DEBUG $1 ] $2"
 		echo -e "$str" > $LOG || die_error "Cannot debug $str to $LOG"
-		[ "$LOG_TO_FILE" = 1 ] && ( echo -e "$str" >> $LOGFILE || die_error "Cannot debug $str to $LOGFILE" )
+		[ "$LIBUI_LOG" = 1 ] && ( echo -e "$str" >> $LIBUI_LOG_FILE || die_error "Cannot debug $str to $LIBUI_LOG_FILE" )
 	fi
 }
 
@@ -136,15 +153,15 @@ ask_checklist ()
 {
 	[ -z "$1" ] && die_error "ask_checklist needs a question!"
 	[ -z "$4" ] && debug 'UI' "ask_checklist args: $@" && die_error "ask_checklist makes only sense if you specify at least 1 thing (tag,item and ON/OFF switch)"
-	[ `type -t _${var_UI_TYPE}_ask_checklist` == function ] || die_error "_${var_UI_TYPE}_ask_checklist is not a function"
-	_${var_UI_TYPE}_ask_checklist "$@"
+	[ `type -t _${LIBUI_UI}_ask_checklist` == function ] || die_error "_${LIBUI_UI}_ask_checklist is not a function"
+	_${LIBUI_UI}_ask_checklist "$@"
 }
 
 
 ask_datetime ()
 {
-	[ `type -t _${var_UI_TYPE}_ask_datetime` == function ] || die_error "_${var_UI_TYPE}_ask_datetime is not a function"
-	_${var_UI_TYPE}_ask_datetime "$@"
+	[ `type -t _${LIBUI_UI}_ask_datetime` == function ] || die_error "_${LIBUI_UI}_ask_datetime is not a function"
+	_${LIBUI_UI}_ask_datetime "$@"
 }
 
 
@@ -161,8 +178,8 @@ ask_number ()
 	[ -n "$2" ] && [[ "$2" = *[^0-9]* ]] && die_error "ask_number \$2 must be a number! not $2"
 	[ -n "$3" ] && [[ "$3" = *[^0-9]* ]] && die_error "ask_number \$3 must be a number! not $3"
 	[ -n "$4" ] && [[ "$4" = *[^0-9]* ]] && die_error "ask_number \$4 must be a number! not $4"
-	[ `type -t _${var_UI_TYPE}_ask_number` == function ] || die_error "_${var_UI_TYPE}_ask_number is not a function"
-	_${var_UI_TYPE}_ask_number "$1" $2 $3 $4
+	[ `type -t _${LIBUI_UI}_ask_number` == function ] || die_error "_${LIBUI_UI}_ask_number is not a function"
+	_${LIBUI_UI}_ask_number "$1" $2 $3 $4
 }
 
 
@@ -177,8 +194,8 @@ ask_number ()
 # $?             : 0 if the user selected anything or skipped (when optional), when user cancelled: 1
 ask_option ()
 {
-	[ `type -t _${var_UI_TYPE}_ask_option` == function ] || die_error "_${var_UI_TYPE}_ask_option is not a function"
-	_${var_UI_TYPE}_ask_option "$@"
+	[ `type -t _${LIBUI_UI}_ask_option` == function ] || die_error "_${LIBUI_UI}_ask_option is not a function"
+	_${LIBUI_UI}_ask_option "$@"
 }
 
 
@@ -186,8 +203,8 @@ ask_option ()
 # $1 type (optional.  eg 'svn', 'ssh').
 ask_password ()
 {
-	[ `type -t _${var_UI_TYPE}_ask_password` == function ] || die_error "_${var_UI_TYPE}_ask_pasword is not a function"
-	_${var_UI_TYPE}_ask_password "$@"
+	[ `type -t _${LIBUI_UI}_ask_password` == function ] || die_error "_${LIBUI_UI}_ask_pasword is not a function"
+	_${LIBUI_UI}_ask_password "$@"
 }
 
 
@@ -200,8 +217,8 @@ ask_password ()
 ask_string ()
 {
 	[ -z "$1" ] && die_error "ask_string needs a question!"
-	[ `type -t _${var_UI_TYPE}_ask_string` == function ] || die_error "_${var_UI_TYPE}_ask_string is not a function"
-	_${var_UI_TYPE}_ask_string "$1" "$2" "$3"
+	[ `type -t _${LIBUI_UI}_ask_string` == function ] || die_error "_${LIBUI_UI}_ask_string is not a function"
+	_${LIBUI_UI}_ask_string "$1" "$2" "$3"
 }
 
 
@@ -212,8 +229,8 @@ ask_string ()
 ask_yesno ()
 {
 	[ -z "$1" ] && die_error "ask_yesno needs a question!"
-	[ `type -t _${var_UI_TYPE}_ask_yesno` == function ] || die_error "_${var_UI_TYPE}_ask_yesno is not a function"
-	_${var_UI_TYPE}_ask_yesno "$@"
+	[ `type -t _${LIBUI_UI}_ask_yesno` == function ] || die_error "_${LIBUI_UI}_ask_yesno is not a function"
+	_${LIBUI_UI}_ask_yesno "$@"
 }
 
 
@@ -226,11 +243,11 @@ ask_yesno ()
 # $3 pid to monitor. if process stopped, stop following (only used in cli mode)
 follow_progress ()
 {
-	[ -z "$1" ] && die_error "follow_progress needs a title!"
-	[ -z "$2" ] && die_error "follow_progress needs a logfile to follow!"
-	FOLLOW_PID=
-	[ `type -t _${var_UI_TYPE}_follow_progress` == function ] || die_error "_${var_UI_TYPE}_follow_progress is not a function"
-	_${var_UI_TYPE}_follow_progress "$@"
+	[ -z "$1" ] && die_error "follow_progress needs a title!" [ -z "$2"
+	] && die_error "follow_progress needs a logfile to follow!"
+	FOLLOW_PID= [ `type -t _${LIBUI_UI}_follow_progress` == function ]
+	|| die_error "_${LIBUI_UI}_follow_progress is not a function"
+	_${LIBUI_UI}_follow_progress "$@"
 }
 
 
@@ -269,10 +286,10 @@ _dia_infofy ()
 	str="$1"
 	if [ "$2" != 0 ]
 	then
-		echo "$1" >> $DIA_SUCCESSIVE_ITEMS-$2
-		str=`cat $DIA_SUCCESSIVE_ITEMS-$2`
+		echo "$1" >> $LIBUI_DIA_SUCCESSIVE_ITEMS-$2
+		str=`cat $LIBUI_DIA_SUCCESSIVE_ITEMS-$2`
 	fi
-	[ "$3" = 1 ] && rm $DIA_SUCCESSIVE_ITEMS-$2
+	[ "$3" = 1 ] && rm $LIBUI_DIA_SUCCESSIVE_ITEMS-$2
 	_dia_dialog --infobox "$str" 0 0
 }
 
@@ -359,7 +376,7 @@ _dia_ask_option ()
 	shift 4
 	CANCEL_LABEL=Cancel
 	[ $TYPE == optional ] && CANCEL_LABEL='Skip'
-	ANSWER_OPTION=$(_dia_dialog $DEFAULT --cancel-label $CANCEL_LABEL --colors --title " $DIA_MENU_TITLE " --menu "$DIA_MENU_TEXT $EXTRA_INFO" 0 0 0 "$@")
+	ANSWER_OPTION=$(_dia_dialog $DEFAULT --cancel-label $CANCEL_LABEL --colors --title " $DIA_MENU_TITLE " --menu "$LIBUI_DIA_MENU_TEXT $EXTRA_INFO" 0 0 0 "$@")
 	local ret=$?
 	debug 'UI' "dia_ask_option: ANSWER_OPTION: $ANSWER_OPTION, returncode (skip/cancel): $ret ($DIA_MENU_TITLE)"
 	[ $TYPE == required ] && return $ret
@@ -419,9 +436,9 @@ _dia_follow_progress ()
 	title=$1
 	logfile=$2
 
-	_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 >$RUNTIME_DIR/aif-follow-pid
-	FOLLOW_PID=`cat $RUNTIME_DIR/aif-follow-pid`
-	rm $RUNTIME_DIR/aif-follow-pid
+	_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 >$LIBUI_FOLLOW_PID
+	FOLLOW_PID=`cat $LIBUI_FOLLOW_PID`
+	rm $LIBUI_FOLLOW_PID
 
 	# I wish something like this would work.  anyone who can explain me why it doesn't get's to be aif contributor of the month.
 	# FOLLOW_PID=`_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 2>&1 >/dev/null | head -n 1`
