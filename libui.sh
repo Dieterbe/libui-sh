@@ -14,11 +14,11 @@ libui-sh-init ()
 {
 	LIBUI_UI=${1:-cli}
 	LIBUI_TMP_DIR=/tmp
-	if [ -n "$2"]; then
+	if [ -n "$2" ]; then
 		LIBUI_TMP_DIR=$2
 	fi
 	LIBUI_LOG=0
-	if [ -n "$3"]; then
+	if [ -n "$3" ]; then
 		LIBUI_LOG=1
 		LIBUI_LOG_FILE=$3
 		LIBUI_LOG_DIR=$(basename $LIBUI_LOG_FILE)
