@@ -243,10 +243,10 @@ ask_yesno ()
 # $3 pid to monitor. if process stopped, stop following (only used in cli mode)
 follow_progress ()
 {
-	[ -z "$1" ] && die_error "follow_progress needs a title!" [ -z "$2"
-	] && die_error "follow_progress needs a logfile to follow!"
-	FOLLOW_PID= [ `type -t _${LIBUI_UI}_follow_progress` == function ]
-	|| die_error "_${LIBUI_UI}_follow_progress is not a function"
+	[ -z "$1" ] && die_error "follow_progress needs a title!"
+	[ -z "$2" ] && die_error "follow_progress needs a logfile to follow!"
+	FOLLOW_PID=
+	[ `type -t _${LIBUI_UI}_follow_progress` == function ] || die_error "_${LIBUI_UI}_follow_progress is not a function"
 	_${LIBUI_UI}_follow_progress "$@"
 }
 
