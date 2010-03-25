@@ -14,6 +14,7 @@
 libui-sh-init ()
 {
 	LIBUI_UI=${1:-cli}
+	[ "$LIBUI_UI" == 'dialog' ] && ! which dialog &>/dev/null && die_error "Required dependency dialog not found"
 	LIBUI_TMP_DIR=/tmp
 	if [ -n "$2" ]; then
 		LIBUI_TMP_DIR=$2
