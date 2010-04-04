@@ -131,11 +131,12 @@ log ()
 debug ()
 {
 	[ "$LIBUI_DEBUG" = "1" ] || return;
+	[ -n "$1" ] || die error "you must specify at least one (non-empty) debug category"
+	[ -n "$2" ] || die_error "debug \$2 cannot be empty"
 	for cat in $1
 	do
 		check_is_in $cat "${LIBUI_DEBUG_CATEGORIES[@]}" || die_error "debug \$1 contains a value ($cat) which is not a valid debug category"
 	done
-	[ -n "$2" ] || die_error "debug \$2 cannot be empty"
 	for file in "${LIBUI_LOG_FILE[@]}"; do
 		dir=$(dirname $file)
 		mkdir -p $dir || die_error "Cannot create log directory $dir"
