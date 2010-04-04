@@ -8,7 +8,7 @@
 # you should call this function when you want to use this library (can be called multiple times, to change ui type or other settings)
 # $1 ui type (dia or cli). defaults to cli
 # $2 directory for tmp files. default /tmp (leave empty for default)
-# $3 logfile (or array of logfiles) (leave empty to disable logging)
+# $3 logfile (or string of logfiles, separated by whitespace) (leave empty to disable logging)
 # $4 debug categories (leave empty to disable debugging) (an array of categories you will use in debug calls. useful when grepping logfiles)
 # this library uses the UI debug category internally, you don't need to specify it. we add it automatically
 libui-sh-init ()
@@ -22,13 +22,14 @@ libui-sh-init ()
 	LIBUI_LOG=0
 	if [ -n "$3" ]; then
 		LIBUI_LOG=1
-		LIBUI_LOG_FILE=$3
+		LIBUI_LOG_FILE="$3"
 	fi
 	LIBUI_DEBUG=0
-	if [ -n "$4" ]; then
+	shift 3
+	if [ -n "$1" ]; then
 		LIBUI_DEBUG=1
-		LIBUI_DEBUG_CATEGORIES=$4
-		LIBUI_DEBUG_CATEGORIES+=('UI')
+		LIBUI_DEBUG_CATEGORIES=("$@")
+		check_is_in 'UI' "${LIBUI_DEBUG_CATEGORIES[@]}" || LIBUI_DEBUG_CATEGORIES+=('UI')
 	fi
 	LIBUI_DIA_SUCCESSIVE_ITEMS=$LIBUI_TMP_DIR/libui-sh-dia-successive-items
 	LIBUI_FOLLOW_PID=$LIBUI_TMP_DIR/libui-sh-follow-pid
@@ -42,14 +43,12 @@ libui-sh-init ()
 check_is_in ()
 {
 	[ -z "$1" ] && die_error "check_is_in needs a non-empty needle as \$1 and a haystack as \$2!(got: check_is_in '$1' '$2'" # haystack can be empty though
-	NEEDLE=$1
-	HAYSTACK=$2
 
-	local pattern="$NEEDLE" element
+	local needle="$1" element
 	shift
 	for element
 	do
-		[[ $element = $pattern ]] && return 0
+		[[ $element = $needle ]] && return 0
 	done
 	return 1
 }
@@ -116,7 +115,8 @@ infofy () #TODO: when using successive things, the screen can become full and yo
 log ()
 {
 	[ "$LIBUI_LOG" = 1 ] || return;
-	for file in "${LIBUI_LOG_FILE[@]}"; do
+	for file in $LIBUI_LOG_FILE; do
+		[ -z "$file" ] && continue;
 		dir=$(dirname $file)
 		mkdir -p $dir || die_error "Cannot create log directory $dir"
 		str="[LOG] `date +"%Y-%m-%d %H:%M:%S"` $@"
@@ -137,7 +137,8 @@ debug ()
 	do
 		check_is_in $cat "${LIBUI_DEBUG_CATEGORIES[@]}" || die_error "debug \$1 contains a value ($cat) which is not a valid debug category"
 	done
-	for file in "${LIBUI_LOG_FILE[@]}"; do
+	for file in $LIBUI_LOG_FILE; do
+		[ -z "$file" ] && continue;
 		dir=$(dirname $file)
 		mkdir -p $dir || die_error "Cannot create log directory $dir"
 		str="[DEBUG $1 ] $2"
