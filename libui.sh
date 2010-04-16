@@ -247,6 +247,22 @@ ask_string ()
 }
 
 
+# ask for multiple strings.
+# this function is not done yet.
+# TODO: how to return data back to user? a variable with one each line a value?
+# TODO: dialog functionality not good
+# $1 question/title
+# $2 exitcode to use when one of the strings is empty and there was no default, or default was ignored (1 default)
+# [ $3 label, $4 default value , .. ]
+# returns 1 if the user cancelled, 0 otherwise
+ask_string_multiple ()
+{
+	[ -z "$1" ] && die_error "ask_string_multiple needs a question!"
+	[ `type -t _${LIBUI_UI}_ask_string_multiple` == function ] || die_error "_${LIBUI_UI}_ask_string_multiple is not a function"
+	_${LIBUI_UI}_ask_string_multiple "$@"
+}
+
+
 # ask a yes/no question.
 # $1 question
 # $2 default answer yes/no (optional)
@@ -438,6 +454,33 @@ _dia_ask_string ()
 	debug 'UI' "_dia_ask_string: user entered $ANSWER_STRING"
 	[ -z "$ANSWER_STRING" ] && return $exitcode
 	return $ret
+}
+
+
+_dia_ask_string_multiple ()
+{
+    MAXRESPONSE=0
+    formtitle="$1"
+    exitcode="${2:-1}"
+    shift 2
+
+    formitems=""
+    line=1
+	unset m; i=0
+    while [ -n "$1" ]
+    do
+        [ -z "$2" ] && die_error "No default value for $1"
+        # format: Label X Y Value X Y display-size value-size
+		words=("$1" $line 1 "$2" $line 20 20 $MAXRESPONSE)
+		for w in "${words[@]}"; do
+			formitems[i++]=$w; formitems[i++]=""
+		done
+		let line++
+
+        formitems="$formitems $this_item"
+        shift 2
+    done
+    _dia_dialog --form "$formtitle" 15 50 0 "${formitems[@]}"
 }
 
 
@@ -643,6 +686,21 @@ _cli_ask_string ()
 	return 0
 }
 
+
+_cli_ask_string_multiple () {
+	echo "$1"
+	exitcode=${2:-1}
+	shift 2
+
+	ANSWER_VALUES=()
+	i=0
+	while [ $# -gt 0 ]; do
+		_cli_ask_string "$1" "$2" $exitcode
+		ANSWER_VALUES[$i]="$ANSWER_STRING"
+		let i++
+		shift 2
+	done
+}
 
 _cli_ask_yesno ()
 {
