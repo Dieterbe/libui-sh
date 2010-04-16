@@ -98,17 +98,17 @@ notify ()
 
 # like notify, but user does not need to confirm explicitly when in dia mode
 # $1 str
-# $2 0/<listname> this infofy call is part of a successive list of things (eg repeat previous things, keep adding items to a list) (only needed for dia, cli does this by design).
+# $2 0/<listname> this inform call is part of a successive list of things (eg repeat previous things, keep adding items to a list) (only needed for dia, cli does this by design).
 #   You can keep several "lists of successive things" by grouping them with <listname>
 #   this is somewhat similar to follow_progress.  Note that this list isn't cleared unless you set $3 to 1.  default 0. (optional).
 # $3 0/1 this is the last one of the group of several things (eg clear buffer).  default 0. (optional)
-infofy () #TODO: when using successive things, the screen can become full and you only see the old stuff, not the new
+inform () #TODO: when using successive things, the screen can become full and you only see the old stuff, not the new
 {
 	successive=${2:-0}
 	succ_last=${3:-0}
-	debug 'UI' "infofy: $1"
-	[ `type -t _${LIBUI_UI}_infofy` == function ] || die_error "_${LIBUI_UI}_infofy is not a function"
-	_${LIBUI_UI}_infofy "$1" $successive $succ_last
+	debug 'UI' "inform: $1"
+	[ `type -t _${LIBUI_UI}_inform` == function ] || die_error "_${LIBUI_UI}_inform is not a function"
+	_${LIBUI_UI}_inform "$1" $successive $succ_last
 }
 
 # logging of stuff
@@ -306,7 +306,7 @@ _dia_notify ()
 }
 
 
-_dia_infofy ()
+_dia_inform ()
 {
 	str="$1"
 	if [ "$2" != 0 ]
@@ -494,7 +494,7 @@ _cli_notify ()
 }
 
 
-_cli_infofy ()
+_cli_inform ()
 {
 	echo -e "$1"
 }
