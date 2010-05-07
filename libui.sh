@@ -11,7 +11,7 @@
 # $3 logfile (or string of logfiles, separated by whitespace) (leave empty to disable logging)
 # $4 debug categories (leave empty to disable debugging) (an array of categories you will use in debug calls. useful when grepping logfiles)
 # this library uses the UI debug category internally, you don't need to specify it. we add it automatically
-libui-sh-init ()
+libui_sh_init ()
 {
 	LIBUI_UI=${1:-cli}
 	[ "$LIBUI_UI" == 'dialog' ] && ! which dialog &>/dev/null && die_error "Required dependency dialog not found"
