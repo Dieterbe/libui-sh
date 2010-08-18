@@ -5,7 +5,8 @@
 # TODO: figure out something to make dia windows always big enough, yet fit nicely in the terminal
 
 
-# you should call this function when you want to use this library (can be called multiple times, to change ui type or other settings)
+# you can call this function to change settings, before calling other libui functions or afterwards
+# it must always be called at least once to set the right variables, but it gets automatically called once at the end of this file
 # $1 ui type (dia or cli). defaults to cli
 # $2 directory for tmp files. default /tmp (leave empty for default)
 # $3 logfile (or string of logfiles, separated by whitespace) (leave empty to disable logging)
@@ -729,3 +730,7 @@ _cli_follow_progress ()
 	[ -n "$3" ] && tail -f $2 --pid=$3
 	[ -z "$3" ] && tail -f $2
 }
+
+
+libui_sh_init
+
