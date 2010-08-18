@@ -7,10 +7,11 @@
 
 # you can call this function to change settings, before calling other libui functions or afterwards
 # it must always be called at least once to set the right variables, but it gets automatically called once at the end of this file
-# $1 ui type (dia or cli). defaults to cli
-# $2 directory for tmp files. default /tmp (leave empty for default)
-# $3 logfile (or string of logfiles, separated by whitespace) (leave empty to disable logging)
-# $4 debug categories (leave empty to disable debugging) (an array of categories you will use in debug calls. useful when grepping logfiles)
+# Don't set the variable or leave it empty to set the default value
+# $1 ui type (dia or cli). default: cli
+# $2 directory for tmp files. default: /tmp
+# $3 logfile (or string of logfiles, separated by whitespace). default: no logging
+# $4 array of categories you will use in debug calls. (useful when grepping logfiles). default: no debugging
 # this library uses the UI debug category internally, you don't need to specify it. we add it automatically
 libui_sh_init ()
 {
