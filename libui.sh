@@ -15,6 +15,8 @@
 libui_sh_init ()
 {
 	LIBUI_UI=${1:-cli}
+	allowed_uis=('cli' 'dia')
+	check_is_in "$LIBUI_UI" "${allowed_uis[@]}" || die_error "libui_sh_init \$1 must be one of 'cli', 'dia' or '' (for cli)"
 	[ "$LIBUI_UI" == 'dialog' ] && ! which dialog &>/dev/null && die_error "Required dependency dialog not found"
 	LIBUI_TMP_DIR=/tmp
 	if [ -n "$2" ]; then
