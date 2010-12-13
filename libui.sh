@@ -389,10 +389,10 @@ _dia_ask_number ()
 		then
 			show_warning 'Invalid number input' "$ANSWER_NUMBER is not a number! try again."
 		else
-			if [ -n "$3" -a $3 != '0' -a $ANSWER_NUMBER -gt $3 ]
+			if [ -n "$3" ] && [ $3 != '0' -a $ANSWER_NUMBER -gt $3 ]
 			then
 				show_warning 'Invalid number input' "$ANSWER_NUMBER is bigger then the maximum,$3! try again."
-			elif [ -n "$2" -a $ANSWER_NUMBER -lt $2 ]
+			elif [ -n "$2" ] && [ $ANSWER_NUMBER -lt $2 ]
 			then
 				show_warning 'Invalid number input' "$ANSWER_NUMBER is smaller then the minimum,$2! try again."
 			else
@@ -592,10 +592,10 @@ _cli_ask_number ()
 		then
 			show_warning 'Invalid number input' "$ANSWER_NUMBER is not a number! try again."
 		else
-			if [ -n "$3" -a $3 != '0' -a $ANSWER_NUMBER -gt $3 ]
+			if [ -n "$3" ] && [ $3 != '0' -a $ANSWER_NUMBER -gt $3 ]
 			then
 				show_warning 'Invalid number input' "$ANSWER_NUMBER is bigger then the maximum,$3! try again."
-			elif [ -n "$2" -a $ANSWER_NUMBER -lt $2 ]
+			elif [ -n "$2" ] && [ $ANSWER_NUMBER -lt $2 ]
 			then
 				show_warning 'Invalid number input' "$ANSWER_NUMBER is smaller then the minimum,$2! try again."
 			else
