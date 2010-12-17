@@ -176,14 +176,17 @@ ask_timezone ()
 
 # ask the user to make a selection from a certain group of things
 # $1 question
-# shift;shift; $@ list of options. first tag, then item then ON/OFF. if item == ^ or - it will not be shown in cli mode.
-# for nostalgic reasons, you can set item to ^ for ON items and - for OFF items. afaik this doesn't have any meaning other then extra visual separation though
+# $2 whether each option gets an extra field for elaborate explanation: 1/0
+# shift 2; $@ list of options, where each option is: $tag $item ON|OFF [elaborate_expl]
+# if the tag suffices for you, you can set item to ^ for ON items and - for OFF items (for some visual indication). these items will not be shown in cli mode.
 # tags may not contain newlines because we use that as output separator. (due to dialog limitation). quotes are ok.
+# the extra explanation field may not contain newlines, and \n are not recognized in dia mode. (dialog limitation), in cli mode this is ok
 # gives you $ANSWER_CHECKLIST, an array containing all tags
 ask_checklist ()
 {
 	[ -z "$1" ] && die_error "ask_checklist needs a question!"
-	[ -z "$4" ] && debug 'UI' "ask_checklist args: $@" && die_error "ask_checklist makes only sense if you specify at least 1 thing (tag,item and ON/OFF switch)"
+	[ "$2" != 0 -a "$2" != 1 ] && die_error "ask_checklist param 2 needs to be 0/1 to denote whether there's an elaborate explanation field per option"
+	[ -z "$5" ] && debug 'UI' "ask_checklist args: $@" && die_error "ask_checklist makes only sense if you specify at least 1 thing (tag,item and ON/OFF switch)"
 	[ `type -t _${LIBUI_UI}_ask_checklist` == function ] || die_error "_${LIBUI_UI}_ask_checklist is not a function"
 	_${LIBUI_UI}_ask_checklist "$@"
 }
@@ -342,24 +345,29 @@ _dia_inform ()
 _dia_ask_checklist ()
 {
 	str=$1
-	shift
-	list=
+	elaborate=$2
+	shift 2
+	list=()
 	while [ -n "$1" ]
 	do
 		[ -z "$2" ] && die_error "no item given for element $1"
 		[ -z "$3" ] && die_error "no ON/OFF switch given for element $1 (item $2)"
 		[ "$3" != ON -a "$3" != OFF ] && die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
-		list="$list $1 $2 $3"
+		list+=("$1" "$2" $3)
+		[ $elaborate -gt 0 ] && list+=("$4") # this can be an empty string, that's ok.
 		shift 3
+		[ $elaborate -gt 0 ] && shift
 	done
 	# i wish dialog would accept something like: --output-separator $'\0'
 	# but it doesn't. there really is no good way to separate items currently
 	# let's assume there are no newlines in the item tags
 	ANSWER_CHECKLIST=()
+	elab=''
+	[ $elaborate -gt 0 ] && elab='--item-help'
 	while read -r line
 	do
 		ANSWER_CHECKLIST+=("$line")
-	done < <(_dia_dialog --separate-output --checklist "$str" 0 0 0 $list)
+	done < <(_dia_dialog --separate-output $elab --checklist "$str" 0 0 0 "${list[@]}")
 	local ret=$?
 	debug 'UI' "_dia_ask_checklist: user checked ON: ${ANSWER_CHECKLIST[@]}"
 	return $ret
@@ -558,7 +566,8 @@ _cli_inform ()
 _cli_ask_checklist ()
 {
 	str=$1
-	shift
+	elaborate=$2
+	shift 2
 	ANSWER_CHECKLIST=()
 	while [ -n "$1" ]
 	do
@@ -566,10 +575,13 @@ _cli_ask_checklist ()
 		[ -z "$3" ] && die_error "no ON/OFF switch given for element $1 (item $2)"
 		[ "$3" != ON -a "$3" != OFF ] && die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
 		item=$1
+		elab=
+		[ $elaborate -gt 0 -a -n "$4" ] && elab="\n$4"
 		[ "$2" != '-' -a "$2" != '^' ] && item="$1 ($2)"
-		[ "$3" = ON  ] && ask_yesno "Enable $1 ?" yes && ANSWER_CHECKLIST+=("$1")
-		[ "$3" = OFF ] && ask_yesno "Enable $1 ?" no  && ANSWER_CHECKLIST+=("$1")
+		[ "$3" = ON  ] && ask_yesno "Enable $1 ?$elab" yes && ANSWER_CHECKLIST+=("$1")
+		[ "$3" = OFF ] && ask_yesno "Enable $1 ?$elab" no  && ANSWER_CHECKLIST+=("$1")
 		shift 3
+		[ $elaborate -gt 0 ] && shift
 	done
 	return 0
 }
