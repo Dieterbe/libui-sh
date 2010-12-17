@@ -715,9 +715,9 @@ _cli_ask_string_multiple () {
 
 _cli_ask_yesno ()
 {
-	[ -z "$2"    ] && echo -n "$1 (y/n): "
-	[ "$2" = yes ] && echo -n "$1 (Y/n): "
-	[ "$2" = no  ] && echo -n "$1 (y/N): "
+	[ -z "$2"    ] && echo -ne "$1 (y/n): "
+	[ "$2" = yes ] && echo -ne "$1 (Y/n): "
+	[ "$2" = no  ] && echo -ne "$1 (y/N): "
 
 	read answer
 	answer=`tr '[:upper:]' '[:lower:]' <<< $answer`
