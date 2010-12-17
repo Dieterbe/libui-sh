@@ -3,7 +3,7 @@
 # TODO: at some places we should check if $1 etc is only 1 word because we often depend on that
 # TODO: standardize. eg everything $1= question/title, $2=default. also default should probably be 'no' for no default everywhere
 # TODO: figure out something to make dia windows always big enough, yet fit nicely in the terminal
-
+# TODO: don't enforce default values in ask_string* functions, and maybe others
 
 # you can call this function to change settings, before calling other libui functions or afterwards
 # it must always be called at least once to set the right variables, but it gets automatically called once at the end of this file
@@ -253,14 +253,12 @@ ask_string ()
 }
 
 
-# ask for multiple strings.
-# this function is not done yet.
-# TODO: how to return data back to user? a variable with one each line a value?
-# TODO: dialog functionality not good
+# ask multiple questions te get multiple string answers (form).
 # $1 question/title
-# $2 exitcode to use when one of the strings is empty and there was no default, or default was ignored (1 default)
-# [ $3 label, $4 default value , .. ]
+# $2 exitcode to use when one of the strings is empty and there was no default, or default was ignored (1 default) (ignored in dia mode)
+# [ $3 questionlabel, $4 questiondefaultvalue , .. ]
 # returns 1 if the user cancelled, 0 otherwise
+# populates $ANSWER_VALUES array, indexed by question number starting at 0.
 ask_string_multiple ()
 {
 	[ -z "$1" ] && die_error "ask_string_multiple needs a question!"
@@ -472,28 +470,29 @@ _dia_ask_string ()
 
 _dia_ask_string_multiple ()
 {
-    MAXRESPONSE=0
-    formtitle="$1"
-    exitcode="${2:-1}"
-    shift 2
+	MAXRESPONSE=0
+	formtitle="$1"
+	exitcode="${2:-1}"
+	shift 2
 
-    formitems=""
-    line=1
+	items=()
+	line=1
 	unset m; i=0
-    while [ -n "$1" ]
-    do
-        [ -z "$2" ] && die_error "No default value for $1"
-        # format: Label X Y Value X Y display-size value-size
-		words=("$1" $line 1 "$2" $line 20 20 $MAXRESPONSE)
-		for w in "${words[@]}"; do
-			formitems[i++]=$w; formitems[i++]=""
-		done
-		let line++
 
-        formitems="$formitems $this_item"
-        shift 2
-    done
-    _dia_dialog --form "$formtitle" 15 50 0 "${formitems[@]}"
+	while [ -n "$1" ]
+	do
+		[ -z "$2" ] && die_error "No default value for $1"
+		# format: Label Y X Value Y X display-size value-size
+		items+=("$1" $line 1 "$2" $line 20 20 $MAXRESPONSE)
+		let line++
+		shift 2
+	done
+
+	ANSWER_VALUES=()
+	while read -r line
+	do
+		ANSWER_VALUES+=("$line")
+	done < <(_dia_dialog --form "$formtitle" 15 50 0 "${items[@]}")
 }
 
 
