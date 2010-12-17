@@ -178,6 +178,8 @@ ask_timezone ()
 # $1 question
 # shift;shift; $@ list of options. first tag, then item then ON/OFF. if item == ^ or - it will not be shown in cli mode.
 # for nostalgic reasons, you can set item to ^ for ON items and - for OFF items. afaik this doesn't have any meaning other then extra visual separation though
+# tags may not contain newlines because we use that as output separator. (due to dialog limitation). quotes are ok.
+# gives you $ANSWER_CHECKLIST, an array containing all tags
 ask_checklist ()
 {
 	[ -z "$1" ] && die_error "ask_checklist needs a question!"
@@ -352,9 +354,16 @@ _dia_ask_checklist ()
 		list="$list $1 $2 $3"
 		shift 3
 	done
-	ANSWER_CHECKLIST=$(_dia_dialog --checklist "$str" 0 0 0 $list)
+	# i wish dialog would accept something like: --output-separator $'\0'
+	# but it doesn't. there really is no good way to separate items currently
+	# let's assume there are no newlines in the item tags
+	ANSWER_CHECKLIST=()
+	while read -r line
+	do
+		ANSWER_CHECKLIST+=("$line")
+	done < <(_dia_dialog --separate-output --checklist "$str" 0 0 0 $list)
 	local ret=$?
-	debug 'UI' "_dia_ask_checklist: user checked ON: $ANSWER_CHECKLIST"
+	debug 'UI' "_dia_ask_checklist: user checked ON: ${ANSWER_CHECKLIST[@]}"
 	return $ret
 }
 
@@ -551,7 +560,7 @@ _cli_ask_checklist ()
 {
 	str=$1
 	shift
-	output=
+	ANSWER_CHECKLIST=()
 	while [ -n "$1" ]
 	do
 		[ -z "$2" ] && die_error "no item given for element $1"
@@ -559,11 +568,10 @@ _cli_ask_checklist ()
 		[ "$3" != ON -a "$3" != OFF ] && die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
 		item=$1
 		[ "$2" != '-' -a "$2" != '^' ] && item="$1 ($2)"
-		[ "$3" = ON  ] && ask_yesno "Enable $1 ?" yes && output="$output $1"
-		[ "$3" = OFF ] && ask_yesno "Enable $1 ?" no  && output="$output $1" #TODO: for some reason, default is always N when asked to select packages
+		[ "$3" = ON  ] && ask_yesno "Enable $1 ?" yes && ANSWER_CHECKLIST+=("$1")
+		[ "$3" = OFF ] && ask_yesno "Enable $1 ?" no  && ANSWER_CHECKLIST+=("$1")
 		shift 3
 	done
-	ANSWER_CHECKLIST=$output
 	return 0
 }
 
