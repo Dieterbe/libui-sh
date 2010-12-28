@@ -57,6 +57,27 @@ check_is_in ()
 	return 1
 }
 
+# prompts user to choose an editor, and exports $EDITOR
+# the list of choices is automatically adapted based on locally available editors
+# if $EDITOR is non-empty and found, we return right away, unless $1 is 'force'
+seteditor() {
+	default=nano
+	if [ -n "$EDITOR" ] && which "$EDITOR" >/dev/null
+	then
+		[ "$1" != 'force' ] && return 0
+		default=$EDITOR
+	fi
+	local opts=()
+	declare -A editors=(["nano"]="nano (easy)" ["pico"]="pico (easy)" ["joe"]="joe (bit more powerful)" ["vi"]="vi (advanced)" ["vim"]="vim (advanced)")
+	for editor in ${!editors[@]}
+	do
+		which $editor &>/dev/null && opts+=($editor "${editors[$editor]}")
+	done
+	ask_option $default "Text editor selection" "Select a Text Editor to Use" required "${opts[@]}" || return 1
+	check_is_in "$ANSWER_OPTION" "${!editors[@]}" && EDITOR=$ANSWER_OPTION || EDITOR=$default
+	export EDITOR
+}
+
 
 ### Functions that your code can use. Cli/dialog mode is fully transparant.  This library takes care of it ###
 # you could write your own functions implementing other things (kdedialogs, zenity dialogs, ..),
