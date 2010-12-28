@@ -591,6 +591,24 @@ _cli_ask_checklist ()
 	elaborate=$2
 	shift 2
 	ANSWER_CHECKLIST=()
+	adv=0
+	if [ -n "$9" ]
+	then
+		# if we have more then 2 elements, switch to advanced mode where we create a tmp file, and put all elements on a separate line
+		# we open text editor where user can comment lines to disable items.  this is easier to navigate and manipulate.
+		# to check for a 3rd element we use field 9. remember elaborate_expl field is optional, and when given can be zero-length.  so input could be one of:
+		# t1 i1 ON|OFF '' t2 i2 ON|OFF '' t3 i3 ON|OFF ''
+		# t1 i1 ON|OFF t2 i2 ON|OFF t3 i3 ON|OFF
+		adv=1 && seteditor || return 1
+		tmpfile=$(mktemp --tmpdir=$LIBUI_TMP_DIR _cli_ask_checklist-data.XXXX) || return 1
+		echo "Comment sign in front of a line indicates OFF-setting." >> $tmpfile
+		echo "Edit this file, when done, just exit the editor" >> $tmpfile
+		echo >> $tmpfile
+		allowed_tags=()
+	fi
+	declare -A defaults
+	defaults['ON']=yes
+	defaults['OFF']=no
 	while [ -n "$1" ]
 	do
 		[ -z "$2" ] && die_error "no item given for element $1"
@@ -598,13 +616,28 @@ _cli_ask_checklist ()
 		[ "$3" != ON -a "$3" != OFF ] && die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
 		item=$1
 		elab=
-		[ $elaborate -gt 0 -a -n "$4" ] && elab="\n$4"
+		[ $elaborate -gt 0 ] && elab=$4
 		[ "$2" != '-' -a "$2" != '^' ] && item="$1 ($2)"
-		[ "$3" = ON  ] && ask_yesno "Enable $1 ?$elab" yes && ANSWER_CHECKLIST+=("$1")
-		[ "$3" = OFF ] && ask_yesno "Enable $1 ?$elab" no  && ANSWER_CHECKLIST+=("$1")
+		if [ $adv -eq 0 ]
+		then
+			[ -n "$elab" ] && elab="\n$elab"
+			ask_yesno "Enable $1 ?$elab" ${defaults[$3]} && ANSWER_CHECKLIST+=("$1")
+		else
+			allowed_tags+=($1)
+			[ "$3" = OFF ] && echo -n '#' >> $tmpfile
+			echo "$item $elab" >> $tmpfile
+		fi
 		shift 3
 		[ $elaborate -gt 0 ] && shift
 	done
+	if [ $adv -eq 1 ]
+	then
+		$EDITOR $tmpfile || return 1
+		for i in $(grep -v ^# $tmpfile | cut -d' ' -f1)
+		do
+			check_is_in "$i" "${allowed_tags[@]}" && ANSWER_CHECKLIST+=("$i")
+		done
+	fi
 	return 0
 }
 
