@@ -1,6 +1,22 @@
-a shell library providing useful UI functions for shell scripts
-originally part of AIF (http://github.com/Dieterbe/aif)
+== A library providing UI functions for shell scripts ==
 
-dependencies:
+When you write bash/shell scripts, do you write your own error/debug/logging/abort functions?
+Logic that requests the user to input a boolean, string, password, selection out of a list,
+date/time, integer, ... ?
+
+Libui-sh is written to take care of all that.
+libui-sh is meant to a be a general-purpose UI abstraction library for shell scripts.
+Low impact, easy to use, but still flexible.
+cli by default, can optionally use ncurses dialogs as well.
+
+To start using it, you only need to source it and you can start calling its functions.
+To reconfigure it (i.e. to change UI type, debug settings, logfile location),
+just run the command libui_sh_init
+
+The library is not strictly a UI library, it also contains a few useful functions like
+check_is_in (check if an element can be found in a set - usually an array) and
+seteditor (interactive $EDITOR selection)
+
+Dependencies:
 - bash (for cli interface)
 - optionally: dialog (for ncurses interface)
