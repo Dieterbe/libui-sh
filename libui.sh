@@ -22,6 +22,7 @@ libui_sh_init ()
 	LIBUI_TMP_DIR=/tmp
 	if [ -n "$2" ]; then
 		LIBUI_TMP_DIR=$2
+		mkdir -p $LIBUI_TMP_DIR 2>/dev/null
 	fi
 	LIBUI_LOG=0
 	if [ -n "$3" ]; then
