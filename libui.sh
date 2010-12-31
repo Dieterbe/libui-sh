@@ -91,7 +91,7 @@ seteditor() {
 # Do not call other functions like debug, notify, .. here because that might cause loops!
 die_error ()
 {
-	echo "ERROR: $@" >&2
+	echo -e "ERROR: $@" >&2
 	exit 2
 }
 
