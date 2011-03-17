@@ -48,13 +48,13 @@ libui_sh_init ()
 # $2 set (array) haystack
 check_is_in ()
 {
-	[ -z "$1" ] && die_error "check_is_in needs a non-empty needle as \$1 and a haystack as \$2!(got: check_is_in '$1' '$2'" # haystack can be empty though
+	[ -n "$1" ] || die_error "check_is_in needs a non-empty needle as \$1 and a haystack as \$2!(got: check_is_in '$1' '$2'" # haystack can be empty though
 
 	local needle="$1" element
 	shift
 	for element
 	do
-		[[ $element = $needle ]] && return 0
+		[[ $element != $needle ]] || return 0
 	done
 	return 1
 }
