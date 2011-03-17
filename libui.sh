@@ -30,7 +30,7 @@ libui_sh_init ()
 		LIBUI_LOG_FILE="$3"
 	fi
 	LIBUI_DEBUG=0
-	shift 3
+	shift 3 || true
 	if [ -n "$1" ]; then
 		LIBUI_DEBUG=1
 		LIBUI_DEBUG_CATEGORIES=("$@")
@@ -39,6 +39,7 @@ libui_sh_init ()
 	LIBUI_DIA_SUCCESSIVE_ITEMS=$LIBUI_TMP_DIR/libui-sh-dia-successive-items
 	LIBUI_FOLLOW_PID=$LIBUI_TMP_DIR/libui-sh-follow-pid
 	LIBUI_DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
+	return 0
 }
 
 
