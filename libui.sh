@@ -89,11 +89,20 @@ seteditor() {
 
 
 # display error message and die
-# Do not call other functions like debug, notify, .. here because that might cause loops!
 die_error ()
 {
+    DIE_ERROR=1 # avoids functions the debug function relies on (i.e. check_is_in) calling us back, causing a loop
+    debug 'UI' "die_error $@"
 	echo -e "ERROR: $@" >&2
 	exit 2
+}
+
+# like die_error, but only to be called by debug function, invocations of this function
+# don't get debugged to avoid loops
+die_error_raw ()
+{
+    echo -e "ERROR: $@" >&2
+    exit 2
 }
 
 
@@ -155,21 +164,22 @@ log ()
 # $1 = one or more debug categories (must be in a list of specified categories. see init function) (separated by spaces)
 #      Useful when grepping in the logfile
 # $2 = string to log
+# always make sure this function never calls die_error, not even indirectly through other functions we call here, to avoid loops
 debug ()
 {
 	[ "$LIBUI_DEBUG" = "1" ] || return;
-	[ -n "$1" ] || die error "you must specify at least one (non-empty) debug category"
-	[ -n "$2" ] || die_error "debug \$2 cannot be empty"
+	[ -n "$1" ] || die error_raw "you must specify at least one (non-empty) debug category"
+	[ -n "$2" ] || die_error_raw "debug \$2 cannot be empty"
 	for cat in $1
 	do
-		check_is_in $cat "${LIBUI_DEBUG_CATEGORIES[@]}" || die_error "debug \$1 contains a value ($cat) which is not a valid debug category"
+		[ -n "$DIE_ERROR" ] || check_is_in $cat "${LIBUI_DEBUG_CATEGORIES[@]}" || die_error_raw "debug \$1 contains a value ($cat) which is not a valid debug category"
 	done
 	for file in $LIBUI_LOG_FILE; do
 		[ -z "$file" ] && continue;
 		dir=$(dirname $file)
-		mkdir -p $dir || die_error "Cannot create log directory $dir"
+		mkdir -p $dir || die_error_raw "Cannot create log directory $dir"
 		str="[DEBUG $1 ] $2"
-		echo -e "$str" >> $file || die_error "Cannot debug $str to $file"
+		echo -e "$str" >> $file || die_error_raw "Cannot debug $str to $file"
 	done
 }
 
