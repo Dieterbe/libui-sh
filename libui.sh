@@ -152,7 +152,7 @@ inform () #TODO: when using successive things, the screen can become full and yo
 log ()
 {
 	local file
-	[ "$LIBUI_LOG" = 1 ] || return;
+	[ "$LIBUI_LOG" = 1 ] || return 0
 	for file in $LIBUI_LOG_FILE; do
 		[ -z "$file" ] && continue;
 		local dir=$(dirname $file)
@@ -171,7 +171,7 @@ debug ()
 {
 	local cat
 	local file
-	[ "$LIBUI_DEBUG" = "1" ] || return;
+	[ "$LIBUI_DEBUG" = "1" ] || return 0
 	[ -n "$1" ] || die error_raw "you must specify at least one (non-empty) debug category"
 	[ -n "$2" ] || die_error_raw "debug \$2 cannot be empty"
 	for cat in $1
