@@ -16,7 +16,7 @@
 libui_sh_init ()
 {
 	LIBUI_UI=${1:-cli}
-	allowed_uis=('cli' 'dia')
+	local allowed_uis=('cli' 'dia')
 	check_is_in "$LIBUI_UI" "${allowed_uis[@]}" || die_error "libui_sh_init \$1 must be one of 'cli', 'dia' or '' (for cli)"
 	[ "$LIBUI_UI" == 'dialog' ] && ! which dialog &>/dev/null && die_error "Required dependency dialog not found"
 	LIBUI_TMP_DIR=/tmp
@@ -63,20 +63,21 @@ check_is_in ()
 # the list of choices is automatically adapted based on locally available editors
 # if $EDITOR is non-empty and found, we return right away, unless $1 is 'force'
 seteditor() {
-	default=nano
+	local default=nano
 	if [ -n "$EDITOR" ] && which "$EDITOR" >/dev/null
 	then
 		[ "$1" != 'force' ] && return 0
 		default=$EDITOR
 	fi
+	local editor
 	local opts=()
-	declare -A editors=(["nano"]="nano (easy)" ["pico"]="pico (easy)" ["joe"]="joe (bit more powerful)" ["vi"]="vi (advanced)" ["vim"]="vim (advanced)")
-	for editor in ${!editors[@]}
+	declare -A LIBUI_EDITORS=(["nano"]="nano (easy)" ["pico"]="pico (easy)" ["joe"]="joe (bit more powerful)" ["vi"]="vi (advanced)" ["vim"]="vim (advanced)")
+	for editor in ${!LIBUI_EDITORS[@]}
 	do
-		which $editor &>/dev/null && opts+=($editor "${editors[$editor]}")
+		which $editor &>/dev/null && opts+=($editor "${LIBUI_EDITORS[$editor]}")
 	done
 	ask_option $default "Text editor selection" "Select a Text Editor to Use" required "${opts[@]}" || return 1
-	check_is_in "$ANSWER_OPTION" "${!editors[@]}" && EDITOR=$ANSWER_OPTION || EDITOR=$default
+	check_is_in "$ANSWER_OPTION" "${!LIBUI_EDITORS[@]}" && EDITOR=$ANSWER_OPTION || EDITOR=$default
 	export EDITOR
 }
 
@@ -115,7 +116,7 @@ show_warning ()
 	[ -z "$1" ] && die_error "show_warning needs a title"
 	[ -z "$2" ] && die_error "show_warning needs an item to show"
 	[ -n "$3" -a "$3" != msg -a "$3" != text ] && die_error "show_warning \$3 must be text or msg"
-	type=msg
+	local type=msg
 	[ -n "$3" ] && type=$3
 	debug 'UI' "show_warning '$1': $2 ($type)"
 	[ `type -t _${LIBUI_UI}_show_warning` == function ] || die_error "_${LIBUI_UI}_show_warning is not a function"
@@ -140,8 +141,8 @@ notify ()
 # $3 0/1 this is the last one of the group of several things (eg clear buffer).  default 0. (optional)
 inform () #TODO: when using successive things, the screen can become full and you only see the old stuff, not the new
 {
-	successive=${2:-0}
-	succ_last=${3:-0}
+	local successive=${2:-0}
+	local succ_last=${3:-0}
 	debug 'UI' "inform: $1"
 	[ `type -t _${LIBUI_UI}_inform` == function ] || die_error "_${LIBUI_UI}_inform is not a function"
 	_${LIBUI_UI}_inform "$1" $successive $succ_last
@@ -150,12 +151,13 @@ inform () #TODO: when using successive things, the screen can become full and yo
 # logging of stuff
 log ()
 {
+	local file
 	[ "$LIBUI_LOG" = 1 ] || return;
 	for file in $LIBUI_LOG_FILE; do
 		[ -z "$file" ] && continue;
-		dir=$(dirname $file)
+		local dir=$(dirname $file)
 		mkdir -p $dir || die_error "Cannot create log directory $dir"
-		str="[LOG] `date +"%Y-%m-%d %H:%M:%S"` $@"
+		local str="[LOG] `date +"%Y-%m-%d %H:%M:%S"` $@"
 		echo -e "$str" >> $file || die_error "Cannot log $str to $file"
 	done
 }
@@ -167,6 +169,8 @@ log ()
 # always make sure this function never calls die_error, not even indirectly through other functions we call here, to avoid loops
 debug ()
 {
+	local cat
+	local file
 	[ "$LIBUI_DEBUG" = "1" ] || return;
 	[ -n "$1" ] || die error_raw "you must specify at least one (non-empty) debug category"
 	[ -n "$2" ] || die_error_raw "debug \$2 cannot be empty"
@@ -176,9 +180,9 @@ debug ()
 	done
 	for file in $LIBUI_LOG_FILE; do
 		[ -z "$file" ] && continue;
-		dir=$(dirname $file)
+		local dir=$(dirname $file)
 		mkdir -p $dir || die_error_raw "Cannot create log directory $dir"
-		str="[DEBUG $1 ] $2"
+		local str="[DEBUG $1 ] $2"
 		echo -e "$str" >> $file || die_error_raw "Cannot debug $str to $file"
 	done
 }
@@ -189,16 +193,18 @@ debug ()
 # this is pretty similar to how tzselect looks, but we support dia+cli + we don't actually change the clock + we don't show a date/time and ask whether it's okay. that comes later.
 ask_timezone ()
 {
-	REGIONS=""
-	for i in $(grep '^[A-Z]' /usr/share/zoneinfo/zone.tab | cut -f 3 | sed -e 's#/.*##g'| sort -u); do
-		REGIONS="$REGIONS $i -"
+	local REGIONS=
+	local region
+	for region in $(grep '^[A-Z]' /usr/share/zoneinfo/zone.tab | cut -f 3 | sed -e 's#/.*##g'| sort -u); do
+		REGIONS="$REGIONS $region -"
 	done
 	while true; do
 		ask_option no "Please select a region" '' required $REGIONS || return 1
 		region=$ANSWER_OPTION
-		ZONES=""
-		for i in $(grep '^[A-Z]' /usr/share/zoneinfo/zone.tab | grep $region/ | cut -f 3 | sed -e "s#$region/##g"| sort -u); do
-			ZONES="$ZONES $i -"
+		local ZONES=
+		local zone
+		for zone in $(grep '^[A-Z]' /usr/share/zoneinfo/zone.tab | grep $region/ | cut -f 3 | sed -e "s#$region/##g"| sort -u); do
+			ZONES="$ZONES $zone -"
 		done
 		ask_option no "Please select a timezone" '' required $ZONES || return 1
 		zone=$ANSWER_OPTION
@@ -264,8 +270,7 @@ ask_option ()
 	[ `type -t _${LIBUI_UI}_ask_option` == function ] || die_error "_${LIBUI_UI}_ask_option is not a function"
 	[ -z "$1" ] && debug 'UI' "ask_option args: $@" && die_error "ask_option \$1 must be the default item (or 'no' for none"
 	[ -z "$2" ] && debug 'UI' "ask_option args: $@" && die_error "ask_option \$2 must be the title"
-	TYPE=${4:-required}
-	[ "$TYPE" != required -a "$TYPE" != optional ] && debug 'UI' "ask_option args: $@" && die_error "ask option \$4 must be required or optional or ''. not $TYPE"
+	[ -z "$4" -o "$4" = required -o "$4" = optional ] && debug 'UI' "ask_option args: $@" || die_error "ask option \$4 must be required or optional or ''. not $4"
 	[ -z "$6" ] && debug 'UI' "ask_option args: $@" && die_error "ask_option makes only sense if you specify at least one option (with tag and name)" #nothing wrong with only 1 option.  it still shows useful info to the user
 	_${LIBUI_UI}_ask_option "$@"
 }
@@ -331,7 +336,6 @@ follow_progress ()
 {
 	[ -z "$1" ] && die_error "follow_progress needs a title!"
 	[ -z "$2" ] && die_error "follow_progress needs a logfile to follow!"
-	FOLLOW_PID=
 	[ `type -t _${LIBUI_UI}_follow_progress` == function ] || die_error "_${LIBUI_UI}_follow_progress is not a function"
 	_${LIBUI_UI}_follow_progress "$@"
 }
@@ -369,7 +373,7 @@ _dia_notify ()
 
 _dia_inform ()
 {
-	str="$1"
+	local str="$1"
 	if [ "$2" != 0 ]
 	then
 		echo "$1" >> $LIBUI_DIA_SUCCESSIVE_ITEMS-$2
@@ -382,10 +386,10 @@ _dia_inform ()
 
 _dia_ask_checklist ()
 {
-	str=$1
-	elaborate=$2
+	local str=$1
+	local elaborate=$2
 	shift 2
-	list=()
+	local list=()
 	while [ -n "$1" ]
 	do
 		[ -z "$2" ] && die_error "no item given for element $1"
@@ -400,8 +404,9 @@ _dia_ask_checklist ()
 	# but it doesn't. there really is no good way to separate items currently
 	# let's assume there are no newlines in the item tags
 	ANSWER_CHECKLIST=()
-	elab=''
+	local elab=''
 	[ $elaborate -gt 0 ] && elab='--item-help'
+	local line
 	while read -r line
 	do
 		ANSWER_CHECKLIST+=("$line")
@@ -432,7 +437,8 @@ _dia_ask_number ()
 	#TODO: i'm not entirely sure this works perfectly. what if user doesnt give anything or wants to abort?
 	while true
 	do
-		str="$1"
+		local str="$1"
+		local str2
 		[ -n $2 ] && str2="min $2"
 		[ -n $3 -a $3 != '0' ] && str2="$str2 max $3"
 		[ -n "$str2" ] && str="$str ( $str2 )"
@@ -461,13 +467,13 @@ _dia_ask_number ()
 
 _dia_ask_option ()
 {
-	DEFAULT=""
+	local DEFAULT=""
 	[ "$1" != 'no' ] && DEFAULT="--default-item $1"
-
-	DIA_MENU_TITLE=$2
-	EXTRA_INFO=$3
+	local DIA_MENU_TITLE=$2
+	local EXTRA_INFO=$3
+	local TYPE=${4:-required}
 	shift 4
-	CANCEL_LABEL=Cancel
+	local CANCEL_LABEL=Cancel
 	[ $TYPE == optional ] && CANCEL_LABEL='Skip'
 	ANSWER_OPTION=$(_dia_dialog $DEFAULT --cancel-label $CANCEL_LABEL --colors --title " $DIA_MENU_TITLE " --menu "$LIBUI_DIA_MENU_TEXT $EXTRA_INFO" 0 0 0 "$@")
 	local ret=$?
@@ -479,17 +485,18 @@ _dia_ask_option ()
 
 _dia_ask_password ()
 {
+	local type_l=
+	local type_u=
 	if [ -n "$1" ]
 	then
 		type_l=`tr '[:upper:]' '[:lower:]' <<< $1`
 		type_u=`tr '[:lower:]' '[:upper:]' <<< $1`
-	else
-		type_l=
-		type_u=
 	fi
 
 	local ANSWER=$(_dia_dialog --passwordbox  "Enter your $type_l password" 8 65 "$2")
 	local ret=$?
+	local ${type_u}_PASSWORD
+	local PASSWORD
 	[ -n "$type_u" ] && read ${type_u}_PASSWORD <<< $ANSWER
 	[ -z "$type_u" ] && PASSWORD=$ANSWER
 	echo $ANSWER
@@ -500,7 +507,7 @@ _dia_ask_password ()
 
 _dia_ask_string ()
 {
-	exitcode=${3:-1}
+	local exitcode=${3:-1}
 	ANSWER_STRING=$(_dia_dialog --inputbox "$1" 0 0 "$2")
 	local ret=$?
 	debug 'UI' "_dia_ask_string: user entered $ANSWER_STRING"
@@ -511,14 +518,14 @@ _dia_ask_string ()
 
 _dia_ask_string_multiple ()
 {
-	MAXRESPONSE=0
-	formtitle="$1"
-	exitcode="${2:-1}"
+	local MAXRESPONSE=0
+	local formtitle="$1"
+	local exitcode="${2:-1}"
 	shift 2
 
-	items=()
-	line=1
-	unset m; i=0
+	local items=()
+	local line=1
+	unset m; local i=0
 
 	while [ -n "$1" ]
 	do
@@ -551,11 +558,11 @@ _dia_ask_yesno ()
 	return $ret
 }
 
-
+# sets FOLLOW_PID to the pid of dialog, so you can kill dialog when you no longer want to "tail"
 _dia_follow_progress ()
 {
-	title=$1
-	logfile=$2
+	local title=$1
+	local logfile=$2
 
 	_dia_dialog --title "$1" --no-kill --tailboxbg "$2" 0 0 >$LIBUI_FOLLOW_PID
 	FOLLOW_PID=`cat $LIBUI_FOLLOW_PID`
@@ -598,11 +605,11 @@ _cli_inform ()
 
 _cli_ask_checklist ()
 {
-	str=$1
-	elaborate=$2
+	local str=$1
+	local elaborate=$2
 	shift 2
 	ANSWER_CHECKLIST=()
-	adv=0
+	local adv=0
 	if [ -n "$9" ]
 	then
 		# if we have more then 2 elements, switch to advanced mode where we create a tmp file, and put all elements on a separate line
@@ -610,12 +617,12 @@ _cli_ask_checklist ()
 		# to check for a 3rd element we use field 9. remember elaborate_expl field is optional, and when given can be zero-length.  so input could be one of:
 		# t1 i1 ON|OFF '' t2 i2 ON|OFF '' t3 i3 ON|OFF ''
 		# t1 i1 ON|OFF t2 i2 ON|OFF t3 i3 ON|OFF
-		adv=1 && seteditor || return 1
-		tmpfile=$(mktemp --tmpdir=$LIBUI_TMP_DIR _cli_ask_checklist-data.XXXX) || return 1
+		local adv=1 && seteditor || return 1
+		local tmpfile=$(mktemp --tmpdir=$LIBUI_TMP_DIR _cli_ask_checklist-data.XXXX) || return 1
 		echo "Comment sign in front of a line indicates OFF-setting." >> $tmpfile
 		echo "Edit this file, when done, just exit the editor" >> $tmpfile
 		echo >> $tmpfile
-		allowed_tags=()
+		local allowed_tags=()
 	fi
 	declare -A defaults
 	defaults['ON']=yes
@@ -625,8 +632,8 @@ _cli_ask_checklist ()
 		[ -z "$2" ] && die_error "no item given for element $1"
 		[ -z "$3" ] && die_error "no ON/OFF switch given for element $1 (item $2)"
 		[ "$3" != ON -a "$3" != OFF ] && die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
-		item=$1
-		elab=
+		local item=$1
+		local elab=
 		[ $elaborate -gt 0 ] && elab=$4
 		[ "$2" != '-' -a "$2" != '^' ] && item="$1 ($2)"
 		if [ $adv -eq 0 ]
@@ -634,7 +641,7 @@ _cli_ask_checklist ()
 			[ -n "$elab" ] && elab="\n$elab"
 			ask_yesno "Enable $1 ?$elab" ${defaults[$3]} && ANSWER_CHECKLIST+=("$1")
 		else
-			allowed_tags+=($1)
+			local allowed_tags+=($1)
 			[ "$3" = OFF ] && echo -n '#' >> $tmpfile
 			echo "$item $elab" >> $tmpfile
 		fi
@@ -698,11 +705,12 @@ _cli_ask_option ()
 {
 	#TODO: strip out color codes
 	#TODO: if user entered incorrect choice, ask him again
-	DEFAULT=
+	local DEFAULT=
 	[ "$1" != 'no' ] && DEFAULT=$1
 
-	MENU_TITLE=$2
-	EXTRA_INFO=$3
+	local MENU_TITLE=$2
+	local EXTRA_INFO=$3
+	local TYPE=${4:-required}
 	shift 4
 
 	echo "$MENU_TITLE"
@@ -713,7 +721,7 @@ _cli_ask_option ()
 		echo "$1 ] $2"
 		shift 2
 	done
-	CANCEL_LABEL=CANCEL
+	local CANCEL_LABEL=CANCEL
 	[ $TYPE == optional ] && CANCEL_LABEL=SKIP
 	echo "$CANCEL_LABEL ] $CANCEL_LABEL"
 	[ -n "$DEFAULT" ] && echo -n " > [ $DEFAULT ] "
@@ -732,13 +740,12 @@ _cli_ask_option ()
 
 _cli_ask_password ()
 {
+	local type_l=
+	local type_u=
 	if [ -n "$1" ]
 	then
 		type_l=`tr '[:upper:]' '[:lower:]' <<< $1`
 		type_u=`tr '[:lower:]' '[:upper:]' <<< $1`
-	else
-		type_l=
-		type_u=
 	fi
 
 	echo -n "Enter your $type_l password: "
@@ -753,7 +760,7 @@ _cli_ask_password ()
 # $3 -z string behavior: always take default if applicable, but if no default then $3 is the returncode (1 is default)
 _cli_ask_string ()
 {
-	exitcode=${3:-1}
+	local exitcode=${3:-1}
 	echo "$1: "
 	[ -n "$2" ] && echo "(Press enter for default.  Default: $2)"
 	echo -n ">"
@@ -774,11 +781,11 @@ _cli_ask_string ()
 
 _cli_ask_string_multiple () {
 	echo "$1"
-	exitcode=${2:-1}
+	local exitcode=${2:-1}
 	shift 2
 
 	ANSWER_VALUES=()
-	i=0
+	local i=0
 	while [ $# -gt 0 ]; do
 		_cli_ask_string "$1" "$2" $exitcode
 		ANSWER_VALUES[$i]="$ANSWER_STRING"
@@ -793,6 +800,7 @@ _cli_ask_yesno ()
 	[ "$2" = yes ] && echo -ne "$1 (Y/n): "
 	[ "$2" = no  ] && echo -ne "$1 (y/N): "
 
+	local answer
 	read answer
 	answer=`tr '[:upper:]' '[:lower:]' <<< $answer`
 	if [ "$answer" = y -o "$answer" = yes ] || [ -z "$answer" -a "$2" = yes ]
@@ -808,8 +816,8 @@ _cli_ask_yesno ()
 
 _cli_follow_progress ()
 {
-	title=$1
-	logfile=$2
+	local title=$1
+	local logfile=$2
 	echo "Title: $1"
 	[ -n "$3" ] && tail -f $2 --pid=$3
 	[ -z "$3" ] && tail -f $2
