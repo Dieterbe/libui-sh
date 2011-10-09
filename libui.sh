@@ -11,7 +11,8 @@
 # $1 ui type (dia or cli). default: cli
 # $2 directory for tmp files. default: /tmp
 # $3 logfile (or string of logfiles, separated by whitespace). default: no logging
-# $4 array of categories you will use in debug calls. (useful when grepping logfiles). default: no debugging
+# $4 categories (separated by whitespace) you will use in debug calls.
+# categories may not contain whitespace. (useful when grepping logfiles). default: no debugging
 # this library uses the UI debug category internally, you don't need to specify it. we add it automatically
 libui_sh_init ()
 {
@@ -30,12 +31,12 @@ libui_sh_init ()
 		LIBUI_LOG_FILE="$3"
 	fi
 	LIBUI_DEBUG=0
-	shift 3 || true
-	if [ -n "$1" ]; then
+	if [ -n "$4" ]; then
 		LIBUI_DEBUG=1
-		LIBUI_DEBUG_CATEGORIES=("$@")
+		LIBUI_DEBUG_CATEGORIES=($4)
 		check_is_in 'UI' "${LIBUI_DEBUG_CATEGORIES[@]}" || LIBUI_DEBUG_CATEGORIES+=('UI')
 	fi
+	[ -z "$5" ] || die_error_raw "\$5 is set to $5 ? We don't use \$5, maybe you still need to update your code to the new api (all debug categories in \$4)"
 	LIBUI_DIA_SUCCESSIVE_ITEMS=$LIBUI_TMP_DIR/libui-sh-dia-successive-items
 	LIBUI_FOLLOW_PID=$LIBUI_TMP_DIR/libui-sh-follow-pid
 	LIBUI_DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
