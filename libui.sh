@@ -394,7 +394,7 @@ _dia_ask_checklist ()
 	do
 		[ -z "$2" ] && die_error "no item given for element $1"
 		[ -z "$3" ] && die_error "no ON/OFF switch given for element $1 (item $2)"
-		[ "$3" != ON -a "$3" != OFF ] && die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
+		[ "$3" = ON -o "$3" = OFF ] || die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
 		list+=("$1" "$2" $3)
 		[ $elaborate -gt 0 ] && list+=("$4") # this can be an empty string, that's ok.
 		shift 3
