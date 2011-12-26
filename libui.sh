@@ -192,15 +192,20 @@ debug ()
 
 # ask for a timezone.
 # this is pretty similar to how tzselect looks, but we support dia+cli + we don't actually change the clock + we don't show a date/time and ask whether it's okay. that comes later.
+# we also make it clearer you can select UTC.  there are some other timezones as well (GMT+2 and whatever) but we assume user doesn't want those.
 ask_timezone ()
 {
-	local REGIONS=
+	local REGIONS="UTC -" # not really a region, but the easiest to incorporate UTC in the flow.
 	local region
 	for region in $(grep '^[A-Z]' /usr/share/zoneinfo/zone.tab | cut -f 3 | sed -e 's#/.*##g'| sort -u); do
 		REGIONS="$REGIONS $region -"
 	done
 	while true; do
 		ask_option no "Please select a region" '' required $REGIONS || return 1
+		if [[ $ANSWER_OPTION = "UTC" ]]; then
+			ANSWER_TIMEZONE=UTC
+			return 0
+		fi
 		region=$ANSWER_OPTION
 		local ZONES=
 		local zone
