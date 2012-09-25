@@ -11,8 +11,10 @@
 # $1 ui type (dia or cli). default: cli
 # $2 directory for tmp files. default: /tmp
 # $3 logfile (or string of logfiles, separated by whitespace). default: no logging
-# $4 array of categories you will use in debug calls. (useful when grepping logfiles). default: no debugging
+# $4 categories (separated by whitespace) you will use in debug calls.
+# categories may not contain whitespace. (useful when grepping logfiles). default: no debugging
 # this library uses the UI debug category internally, you don't need to specify it. we add it automatically
+# $5 show stacktrace on die_error: 1 or 0 (default)
 libui_sh_init ()
 {
 	LIBUI_UI=${1:-cli}
@@ -30,12 +32,13 @@ libui_sh_init ()
 		LIBUI_LOG_FILE="$3"
 	fi
 	LIBUI_DEBUG=0
-	shift 3 || true
-	if [ -n "$1" ]; then
+	if [ -n "$4" ]; then
 		LIBUI_DEBUG=1
-		LIBUI_DEBUG_CATEGORIES=("$@")
+		LIBUI_DEBUG_CATEGORIES=($4)
 		check_is_in 'UI' "${LIBUI_DEBUG_CATEGORIES[@]}" || LIBUI_DEBUG_CATEGORIES+=('UI')
 	fi
+	LIBUI_STACKTRACE=${5:-0}
+	check_is_in $LIBUI_STACKTRACE 0 1 || die_error "libui_sh_init \$5 must be 0 or 1 to denote printing stacktrace in die_error ('' = default = 0)"
 	LIBUI_DIA_SUCCESSIVE_ITEMS=$LIBUI_TMP_DIR/libui-sh-dia-successive-items
 	LIBUI_FOLLOW_PID=$LIBUI_TMP_DIR/libui-sh-follow-pid
 	LIBUI_DIA_MENU_TEXT="Use the UP and DOWN arrows to navigate menus.  Use TAB to switch between buttons and ENTER to select."
@@ -95,7 +98,14 @@ die_error ()
     DIE_ERROR=1 # avoids functions the debug function relies on (i.e. check_is_in) calling us back, causing a loop
     debug 'UI' "die_error $@"
 	echo -e "ERROR: $@" >&2
+	((LIBUI_STACKTRACE)) && print_stacktrace >&2
 	exit 2
+}
+
+print_stacktrace ()
+{
+	echo "stacktrace:"
+	for frame in {0..50}; do caller $frame; done
 }
 
 # like die_error, but only to be called by debug function, invocations of this function
@@ -191,15 +201,20 @@ debug ()
 
 # ask for a timezone.
 # this is pretty similar to how tzselect looks, but we support dia+cli + we don't actually change the clock + we don't show a date/time and ask whether it's okay. that comes later.
+# we also make it clearer you can select UTC.  there are some other timezones as well (GMT+2 and whatever) but we assume user doesn't want those.
 ask_timezone ()
 {
-	local REGIONS=
+	local REGIONS="UTC -" # not really a region, but the easiest to incorporate UTC in the flow.
 	local region
 	for region in $(grep '^[A-Z]' /usr/share/zoneinfo/zone.tab | cut -f 3 | sed -e 's#/.*##g'| sort -u); do
 		REGIONS="$REGIONS $region -"
 	done
 	while true; do
 		ask_option no "Please select a region" '' required $REGIONS || return 1
+		if [[ $ANSWER_OPTION = "UTC" ]]; then
+			ANSWER_TIMEZONE=UTC
+			return 0
+		fi
 		region=$ANSWER_OPTION
 		local ZONES=
 		local zone
@@ -394,7 +409,7 @@ _dia_ask_checklist ()
 	do
 		[ -z "$2" ] && die_error "no item given for element $1"
 		[ -z "$3" ] && die_error "no ON/OFF switch given for element $1 (item $2)"
-		[ "$3" != ON -a "$3" != OFF ] && die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
+		[ "$3" = ON -o "$3" = OFF ] || die_error "element $1 (item $2) has status $3 instead of ON/OFF!"
 		list+=("$1" "$2" $3)
 		[ $elaborate -gt 0 ] && list+=("$4") # this can be an empty string, that's ok.
 		shift 3
