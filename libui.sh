@@ -99,6 +99,12 @@ die_error ()
 	exit 2
 }
 
+print_stacktrace ()
+{
+	echo "stacktrace:"
+	for frame in {0..50}; do caller $frame; done
+}
+
 # like die_error, but only to be called by debug function, invocations of this function
 # don't get debugged to avoid loops
 die_error_raw ()
