@@ -8,7 +8,7 @@
 # you can call this function to change settings, before calling other libui functions or afterwards
 # it must always be called at least once to set the right variables, but it gets automatically called once at the end of this file
 # Don't set the variable or leave it empty to set the default value
-# $1 ui type (dia or cli). default: cli
+# $1 ui type (dia, cli or auto). default: cli
 # $2 directory for tmp files. default: /tmp
 # $3 logfile (or string of logfiles, separated by whitespace). default: no logging
 # $4 categories (separated by whitespace) you will use in debug calls.
@@ -17,10 +17,13 @@
 # $5 show stacktrace on die_error: 1 or 0 (default)
 libui_sh_init ()
 {
-	LIBUI_UI=${1:-cli}
-	local allowed_uis=('cli' 'dia')
-	check_is_in "$LIBUI_UI" "${allowed_uis[@]}" || die_error "libui_sh_init \$1 must be one of 'cli', 'dia' or '' (for cli)"
-	[ "$LIBUI_UI" == 'dialog' ] && ! which dialog &>/dev/null && die_error "Required dependency dialog not found"
+	LIBUI_UI=${1:-auto}
+	allowed_uis=('cli' 'dia' 'auto')
+	check_is_in "$LIBUI_UI" "${allowed_uis[@]}" || die_error "libui_sh_init \$1 must be one of 'cli', 'dia', 'auto' or '' (for cli)"
+	[ "$LIBUI_UI" == 'dia' ] && ! which dialog &>/dev/null && die_error "Required dependency dialog not found"
+	if [ "$LIBUI_UI" == 'auto' ]; then
+        	! which dialog &>/dev/null && LIBUI_UI='cli' ||  LIBUI_UI='dia'
+	fi
 	LIBUI_TMP_DIR=/tmp
 	if [ -n "$2" ]; then
 		LIBUI_TMP_DIR=$2
