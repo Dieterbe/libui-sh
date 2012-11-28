@@ -208,7 +208,7 @@ debug ()
 ask_timezone ()
 {
 	REGIONS="UTC -" # not really a region, but the easiest to incorporate UTC in the flow.
-	region
+	region=
 	for region in $(grep '^[A-Z]' /usr/share/zoneinfo/zone.tab | cut -f 3 | sed -e 's#/.*##g'| sort -u); do
 		REGIONS="$REGIONS $region -"
 	done
