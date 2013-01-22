@@ -358,6 +358,15 @@ follow_progress ()
 	_${LIBUI_UI}_follow_progress "$@"
 }
 
+# follow the progress of something by showing it's log, updating real-time. It does not need a physcal file to follow
+# $1 title
+follow_progress_inline ()
+{
+        [ -z "$1" ] && die_error "follow_progress_inline needs a title!"
+	debug 'UI' "follow_progress_inline: $@"
+        [ `type -t _${LIBUI_UI}_follow_progress_inline` == function ] || die_error "_${LIBUI_UI}_follow_progress_inline is not a function"
+        _${LIBUI_UI}_follow_progress_inline "$@"
+}
 
 
 
@@ -603,7 +612,11 @@ _dia_follow_progress ()
 }
 
 
-
+_dia_follow_progress_inline ()
+{
+	title=$1
+	_dia_dialog --progressbox "$1" 0 0
+}
 
 _cli_show_warning ()
 {
@@ -845,6 +858,12 @@ _cli_follow_progress ()
 	[ -z "$3" ] && tail -f $2
 }
 
+_cli_follow_progress_inline ()
+{
+        title=$1
+        echo "Title: $1"
+	cat
+}
 
 libui_sh_init
 
