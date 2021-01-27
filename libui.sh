@@ -15,6 +15,11 @@
 # categories may not contain whitespace. (useful when grepping logfiles). default: no debugging
 # this library uses the UI debug category internally, you don't need to specify it. we add it automatically
 # $5 show stacktrace on die_error: 1 or 0 (default)
+
+# load colors
+SCRIPTPATH="$( cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 ; pwd -P )"
+source ${SCRIPTPATH}/libui-colors.sh
+
 libui_sh_init ()
 {
 	LIBUI_UI=${1:-cli}
@@ -97,7 +102,7 @@ die_error ()
 {
     DIE_ERROR=1 # avoids functions the debug function relies on (i.e. check_is_in) calling us back, causing a loop
     debug 'UI' "die_error $@"
-	echo -e "ERROR: $@" >&2
+	echo -e "${Red}ERROR: $@${Color_Off}" >&2
 	((LIBUI_STACKTRACE)) && print_stacktrace >&2
 	exit 2
 }
